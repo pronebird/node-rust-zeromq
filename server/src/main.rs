@@ -3,7 +3,8 @@ extern crate protobuf;
 
 mod rpc;
 use rpc::{Request, RequestType, Response};
-use protobuf::*;
+use protobuf::Message;
+use protobuf::core::parse_from_bytes;
 use std::{fmt, thread};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
