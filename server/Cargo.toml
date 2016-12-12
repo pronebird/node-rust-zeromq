@@ -3,5 +3,9 @@ name = "zeromq-example"
 version = "0.1.0"
 authors = ["Andrej Mihajlov <and@codeispoetry.ru>"]
 
+[dependencies]
+protobuf = "1.0.24"
+
 [dependencies.zmq]
 git = "https://github.com/erickt/rust-zmq.git"
+

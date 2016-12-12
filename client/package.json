@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "protobufjs": "^6.1.0",
     "zmq": "^2.15.3"
   }
 }

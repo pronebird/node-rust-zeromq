@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package rpc;
+
+enum RequestType {
+  UNKNOWN = 0;
+  PING = 1;
+}
+
+message Request {
+  RequestType type = 1;
+  string query = 2;
+}
+
+message Response {
+  RequestType type = 1;
+  string message = 2;
+}

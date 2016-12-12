@@ -1,7 +1,49 @@
 extern crate zmq;
+extern crate protobuf;
 
+mod rpc;
+
+use rpc::Request;
+use rpc::RequestType;
+use rpc::Response;
+
+use protobuf::*;
+
+use std::fmt;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+//
+// Make RequestType printable
+//
+impl fmt::Display for RequestType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match *self {
+            RequestType::PING => "PING",
+            _ => "UNKNOWN"
+        };
+        return write!(f, "{}", s);
+    }
+}
+
+//
+// RPC methods
+//
+fn accept_challenge(req: &Request) -> Response {
+    let mut res = Response::new();
+    res.set_field_type(req.get_field_type());
+    res.set_message(String::from("accepted"));
+
+    return res;
+}
+
+fn invalid_request(req: &Request) -> Response {
+    let mut res = Response::new();
+    res.set_field_type(req.get_field_type());
+    res.set_message(String::from("invalid request type"));
+
+    return res;
+}
 
 fn main() {
     // create new zmq context
@@ -19,25 +61,34 @@ fn main() {
     let push_thread = thread::spawn(move || {
         loop {
             let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-            let msg = format!("The time is {}", time);
+            let msg = time.to_string();
 
-            push_socket.send_str(&msg, 0).unwrap();
+            push_socket.send(&msg, 0).unwrap();
 
-            println!("Sent data");
+            println!("Sent beacon");
 
             thread::sleep(Duration::from_secs(3));
         }
     });
 
     let rep_thread = thread::spawn(move || {
-        let mut msg = zmq::Message::new().unwrap();
-
         loop {
-            rep_socket.recv(&mut msg, 0).unwrap();
+            // rep_socket.recv(&mut mut_msg, 0).unwrap();
+            let bytes = rep_socket.recv_bytes(0).unwrap();
+            let request: Request = parse_from_bytes(&bytes).unwrap();
+            let request_type = request.get_field_type();
 
-            println!("Received {}", msg.as_str().unwrap());
+            println!("-> type: {}, query: {}", request_type, request.get_query());
+            
+            // handle received message
+            let response = match request_type {
+                RequestType::PING  => accept_challenge(&request),
+                _ => invalid_request(&request),
+            };
 
-            rep_socket.send_str("Pong", 0).unwrap();
+            // send response
+            let bytes = response.write_to_bytes().unwrap();
+            rep_socket.send(&bytes, 0).unwrap();
         }
     });
 
