@@ -19,7 +19,7 @@ fn main() {
     let push_thread = thread::spawn(move || {
         loop {
             let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-            let msg = format!("Time is {}", time);
+            let msg = format!("The time is {}", time);
 
             push_socket.send_str(&msg, 0).unwrap();
 
