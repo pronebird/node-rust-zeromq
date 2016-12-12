@@ -2,15 +2,9 @@ extern crate zmq;
 extern crate protobuf;
 
 mod rpc;
-
-use rpc::Request;
-use rpc::RequestType;
-use rpc::Response;
-
+use rpc::{Request, RequestType, Response};
 use protobuf::*;
-
-use std::fmt;
-use std::thread;
+use std::{fmt, thread};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 //
