@@ -4,13 +4,18 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 fn main() {
+    // create new zmq context
     let ctx = zmq::Context::new();
+
+    // create one-way push socket to send messages from server to client
     let push_socket = ctx.socket(zmq::PUSH).unwrap();
     push_socket.bind("tcp://127.0.0.1:9998").unwrap();
 
+    // create reply socket for synchronous request-reply communication
     let rep_socket = ctx.socket(zmq::REP).unwrap();
     rep_socket.bind("tcp://127.0.0.1:9999").unwrap();
 
+    // spin off threads
     let push_thread = thread::spawn(move || {
         loop {
             let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
@@ -36,6 +41,7 @@ fn main() {
         }
     });
 
+    // wait for threads to complete execution
     let _ = push_thread.join();
     let _ = rep_thread.join();
 }
