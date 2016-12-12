@@ -4,8 +4,6 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 fn main() {
-    println!("ZeroMQ server.");
-
     let ctx = zmq::Context::new();
     let push_socket = ctx.socket(zmq::PUSH).unwrap();
     push_socket.bind("tcp://127.0.0.1:9998").unwrap();
@@ -38,6 +36,6 @@ fn main() {
         }
     });
 
-    push_thread.join();
-    rep_thread.join();
+    let _ = push_thread.join();
+    let _ = rep_thread.join();
 }
