@@ -68,7 +68,6 @@ fn main() {
 
     let rep_thread = thread::spawn(move || {
         loop {
-            // rep_socket.recv(&mut mut_msg, 0).unwrap();
             let bytes = rep_socket.recv_bytes(0).unwrap();
             let request: Request = parse_from_bytes(&bytes).unwrap();
             let request_type = request.get_field_type();
