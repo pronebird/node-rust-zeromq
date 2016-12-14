@@ -8,17 +8,17 @@ use protobuf::core::parse_from_bytes;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-trait RpcConsumer {
-    fn consume(&self, req: &RpcRequest) -> RpcResponse;
+trait RequestHandler {
+    fn handle_request(&self, req: &RpcRequest) -> RpcResponse;
 }
 
-trait RpcController {
+trait Service {
     fn ack(&self, req: &AckRequest) -> AckResponse;
 }
 
 struct RpcService {}
 
-impl RpcController for RpcService {
+impl Service for RpcService {
      fn ack(&self, _: &AckRequest) -> AckResponse {
         let mut res = AckResponse::new();
         res.set_message(String::from("accepted"));
@@ -26,8 +26,8 @@ impl RpcController for RpcService {
      }
 }
 
-impl RpcConsumer for RpcService {
-    fn consume(&self, req: &RpcRequest) -> RpcResponse {
+impl RequestHandler for RpcService {
+    fn handle_request(&self, req: &RpcRequest) -> RpcResponse {
         let method_name = req.get_method();
         let data = req.get_data();
 
@@ -96,7 +96,7 @@ fn main() {
             println!("-> {}", request.get_method());
             
             // handle request
-            let response = service.consume(&request);
+            let response = service.handle_request(&request);
 
             // send response
             let bytes = response.write_to_bytes().unwrap();
