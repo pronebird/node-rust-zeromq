@@ -2,17 +2,33 @@ syntax = "proto3";
 
 package rpc;
 
-enum RequestType {
-  UNKNOWN = 0;
-  PING = 1;
+//
+// RPC communication layer
+//
+message RpcRequest {
+  string method = 1;
+  bytes data = 2;
 }
 
-message Request {
-  RequestType type = 1;
-  string query = 2;
+message RpcResponse {
+  string method = 1;
+  bytes data = 2;
+  bool status = 3;
+  string error = 4;
 }
 
-message Response {
-  RequestType type = 1;
-  string message = 2;
+//
+// RPC
+//
+
+message AckRequest {
+  string message = 1;
+}
+
+message AckResponse {
+  string message = 1;
+}
+
+service Service {
+  rpc ack (AckRequest) returns (AckResponse);
 }

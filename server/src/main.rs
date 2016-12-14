@@ -2,42 +2,62 @@ extern crate zmq;
 extern crate protobuf;
 
 mod rpc;
-use rpc::{Request, RequestType, Response};
+use rpc::{RpcRequest, RpcResponse, AckRequest, AckResponse};
 use protobuf::Message;
 use protobuf::core::parse_from_bytes;
-use std::{fmt, thread};
+use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-//
-// Make RequestType printable
-//
-impl fmt::Display for RequestType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = match *self {
-            RequestType::PING => "PING",
-            _ => "UNKNOWN"
+trait RpcConsumer {
+    fn consume(&self, req: &RpcRequest) -> RpcResponse;
+}
+
+trait RpcController {
+    fn ack(&self, req: &AckRequest) -> AckResponse;
+}
+
+struct RpcService {}
+
+impl RpcController for RpcService {
+     fn ack(&self, _: &AckRequest) -> AckResponse {
+        let mut res = AckResponse::new();
+        res.set_message(String::from("accepted"));
+        return res;
+     }
+}
+
+impl RpcConsumer for RpcService {
+    fn consume(&self, req: &RpcRequest) -> RpcResponse {
+        let method_name = req.get_method();
+        let data = req.get_data();
+
+        let mut rpc_response = RpcResponse::new();
+        rpc_response.set_method(String::from(method_name));
+
+        let result = match method_name {
+            ".rpc.Service.ack" => {
+                let ack_request: AckRequest = parse_from_bytes(&data).unwrap();
+                let ack_response = self.ack(&ack_request);
+                println!("<- {}: {}", method_name, ack_request.get_message());
+                Ok(ack_response)
+            },
+            _ => Err("Unknown method"),
         };
-        return write!(f, "{}", s);
+
+        match result {
+            Ok(ref x) => {
+                let bytes = x.write_to_bytes().unwrap();
+                rpc_response.set_data(bytes);
+            },
+            Err(e) => {
+                rpc_response.set_error(String::from(e));
+            },
+        };
+
+        rpc_response.set_status(result.is_ok());
+
+        return rpc_response;
     }
-}
-
-//
-// RPC methods
-//
-fn accept_challenge(req: &Request) -> Response {
-    let mut res = Response::new();
-    res.set_field_type(req.get_field_type());
-    res.set_message(String::from("accepted"));
-
-    return res;
-}
-
-fn invalid_request(req: &Request) -> Response {
-    let mut res = Response::new();
-    res.set_field_type(req.get_field_type());
-    res.set_message(String::from("invalid request type"));
-
-    return res;
 }
 
 fn main() {
@@ -67,18 +87,16 @@ fn main() {
     });
 
     let rep_thread = thread::spawn(move || {
+        let service = RpcService {};
+
         loop {
             let bytes = rep_socket.recv_bytes(0).unwrap();
-            let request: Request = parse_from_bytes(&bytes).unwrap();
-            let request_type = request.get_field_type();
+            let request: RpcRequest = parse_from_bytes(&bytes).unwrap();
 
-            println!("-> type: {}, query: {}", request_type, request.get_query());
+            println!("-> {}", request.get_method());
             
-            // handle received message
-            let response = match request_type {
-                RequestType::PING  => accept_challenge(&request),
-                _ => invalid_request(&request),
-            };
+            // handle request
+            let response = service.consume(&request);
 
             // send response
             let bytes = response.write_to_bytes().unwrap();
