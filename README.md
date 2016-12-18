@@ -10,6 +10,10 @@
 1. Switch to `client` and run `npm install`
 2. Switch to `server` and run `cargo update`
 
+## Protocol buffers interface
+
+Run `gen-protocol.sh` to update protocol buffers interface in Rust to reflect changes to .proto files in protocol folder. Node.js implementation does that automatically in runtime.
+
 ## Running client
 
 ```sh
